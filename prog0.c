@@ -40,13 +40,24 @@ int any_even_one(unsigned x){
     return (x & 0x55555555) != 0;
 }
 // returns a mask indicating the position of the left most one in x
-int leftmost_one(unsigned x);
+int leftmost_one(unsigned x){
+    x |= (x >> 1);
+    x |= (x >> 2);
+    x |= (x >> 4);
+    x |= (x >> 8);
+    x |= (x >> 16);
+    return x ^ (x >> 1);
+}
 // returns x shifted n positions to the left with the n most significant bits of x 
 // inserted at the right of x
-unsigned rotate_left(unsigned x, int n);
+unsigned rotate_left(unsigned x, int n){
+    return (x << n) | (x >> (32 - n));
+}
 // returns x shifted n positions to the right with the n least significant bits of x 
 // inserted at the left of x
-unsigned rotate_right(unsigned x, int n);
+unsigned rotate_right(unsigned x, int n){
+    return (x >> n) | (x << (32 - n));
+}
 // returns x+y if no overflow occurs
 // returns TMAX if a positive overflow occurs
 // returns TMIN if a negative overflow occurs
@@ -72,6 +83,45 @@ int main(int argc, char** argv){
             printf("True");
         else
             printf("False");
+    }
+    else if(strcmp(op, "lrotate") == 0){
+        if(argc != 4){
+            printf("Invalid number of arguments");
+            exit(0);
+        }
+        if(read_hex(&v, argv[2]) == -1){
+            printf("Invalid hex value");
+            exit(0);
+        }
+        int n = atoi(argv[3]);
+        if(n < 0 || n > 31){
+            printf("Invalid number of shift positions");
+            exit(0);
+        }
+        printf("%08x", rotate_left(v.uval, n));
+    }
+    else if(strcmp(op, "rrotate") == 0){
+        if(argc != 4){
+            printf("Invalid number of arguments");
+            exit(0);
+        }
+        if(read_hex(&v, argv[2]) == -1){
+            printf("Invalid hex value");
+            exit(0);
+        }
+        int n = atoi(argv[3]);
+        if(n < 0 || n > 31){
+            printf("Invalid number of shift positions");
+            exit(0);
+        }
+        printf("%08x", rotate_right(v.uval, n));
+    }
+    else if(strcmp(op, "left") == 0){
+        if(read_hex(&v, argv[2]) == -1){
+            printf("Invalid hex value");
+            exit(0);
+        }
+        printf("%08x", leftmost_one(v.uval));
     }
     else{
         printf("Invalid operation");
