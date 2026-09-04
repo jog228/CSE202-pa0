@@ -61,70 +61,152 @@ unsigned rotate_right(unsigned x, int n){
 // returns x+y if no overflow occurs
 // returns TMAX if a positive overflow occurs
 // returns TMIN if a negative overflow occurs
-int saturating_add(int x, int y);
+int saturating_add(int x, int y){
+    int sum = x + y;
+    int sign_x = x >> 31;
+    int sign_y = y >> 31;
+    int sign_sum = sum >> 31;
+    int pos_overflow = (!sign_x) && (!sign_y) && sign_sum;
+    int neg_overflow = sign_x && sign_y && (!sign_sum);
+    if(pos_overflow)
+        return INT_MAX;
+    if(neg_overflow)
+        return INT_MIN;
+    return sum;
+}
 // multiplies the binary representation of a float number f by 2
-unsigned float_twice(unsigned f);
+unsigned float_twice(unsigned f){
+    unsigned sign = f & 0x80000000;
+    unsigned exp = (f >> 23) & 0xFF;
+    unsigned mantissa = f & 0x7FFFFF;
+    // infinity or NaN
+    if(exp == 0xFF)
+        return f;
+    if(exp == 0){
+        // denormalized
+        mantissa <<= 1;
+    }
+    else{
+        // normal
+        exp++;
+        if(exp == 0xFF)
+            mantissa = 0;
+    }
+    return sign | (exp << 23) | mantissa;
+}
 // divides the binary representation of a float number f by 2
-unsigned float_half(unsigned f);
+unsigned float_half(unsigned f){
+    unsigned sign = f & 0x80000000;
+    unsigned exp = (f >> 23) & 0xFF;
+    unsigned mantissa = f & 0x7FFFFF;
+    // infinity or NaN
+    if(exp == 0xFF)
+        return f;
+    if(exp == 0){
+        // denormalized
+        mantissa >>= 1;
+    }
+    else if (exp == 1){
+        mantissa = (mantissa | 0x800000) >> 1;
+        exp = 0;
+    }
+    else{
+        exp--;
+    }
+    return sign | (exp << 23) | mantissa;
+}
 
 int main(int argc, char** argv){
     if(argc != 3 && argc != 4){
-        printf("Invalid number of arguments");
+        printf("Invalid number of arguments\n");
         exit(0);
     }
     char *op = argv[1];
     union value v;
     if(strcmp(op, "even") == 0){
         if(read_hex(&v, argv[2]) == -1){
-            printf("Invalid hex value");
+            printf("Invalid hex value\n");
             exit(0);
         }
         if(any_even_one(v.uval))
-            printf("True");
+            printf("True\n");
         else
-            printf("False");
+            printf("False\n");
     }
     else if(strcmp(op, "lrotate") == 0){
         if(argc != 4){
-            printf("Invalid number of arguments");
+            printf("Invalid number of arguments\n");
             exit(0);
         }
         if(read_hex(&v, argv[2]) == -1){
-            printf("Invalid hex value");
+            printf("Invalid hex value\n");
             exit(0);
         }
         int n = atoi(argv[3]);
         if(n < 0 || n > 31){
-            printf("Invalid number of shift positions");
+            printf("Invalid number of shift positions\n");
             exit(0);
         }
-        printf("%08x", rotate_left(v.uval, n));
+        printf("%08x\n", rotate_left(v.uval, n));
     }
     else if(strcmp(op, "rrotate") == 0){
         if(argc != 4){
-            printf("Invalid number of arguments");
+            printf("Invalid number of arguments\n");
             exit(0);
         }
         if(read_hex(&v, argv[2]) == -1){
-            printf("Invalid hex value");
+            printf("Invalid hex value\n");
             exit(0);
         }
         int n = atoi(argv[3]);
         if(n < 0 || n > 31){
-            printf("Invalid number of shift positions");
+            printf("Invalid number of shift positions\n");
             exit(0);
         }
-        printf("%08x", rotate_right(v.uval, n));
+        printf("%08x\n", rotate_right(v.uval, n));
     }
     else if(strcmp(op, "left") == 0){
         if(read_hex(&v, argv[2]) == -1){
-            printf("Invalid hex value");
+            printf("Invalid hex value\n");
             exit(0);
         }
-        printf("%08x", leftmost_one(v.uval));
+        printf("%08x\n", leftmost_one(v.uval));
+    }
+    else if(strcmp(op, "saturate") == 0){
+        if(argc != 4){
+            printf("Invalid number of arguments\n");
+            exit(0);
+        }
+        union value vx, vy;
+        if(read_hex(&vx, argv[2]) == -1 || read_hex(&vy, argv[3]) == -1){
+            printf("Invalid hex value\n");
+            exit(0);
+        }
+        int result = saturating_add(vx.sval, vy.sval);
+        printf("%08x %d\n", result, result);
+    }
+    else if(strcmp(op, "twice") == 0){
+        if(read_hex(&v, argv[2]) == -1){
+            printf("Invalid hex vaue\n");
+            exit(0);
+        }
+        unsigned result = float_twice(v.uval);
+        union value vr;
+        vr.uval = result;
+        printf("%08x %e\n", result, vr.fval);
+    }
+    else if(strcmp(op, "half") == 0){
+        if(read_hex(&v, argv[2]) == -1){
+            printf("Invalid hex value\n");
+            exit(0);
+        }
+        unsigned result = float_half(v.uval);
+        union value vr;
+        vr.uval = result;
+        printf("%08x %e\n", result, vr.fval);
     }
     else{
-        printf("Invalid operation");
+        printf("Invalid operation\n");
     }
     return 0;
 }
